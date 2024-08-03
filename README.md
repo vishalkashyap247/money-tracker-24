@@ -1,4 +1,4 @@
-get top 5 coins detials instantly.
+get top 5 coins details instantly.
 
 ## about project
 money-tracker-24 webpage helps user to get info about top 5 coins, page it self gets refreshed in 30 seconds.

@@ -25,10 +25,14 @@ async function fetchAndStoreData() {
         let suffix = "/coins/markets?vs_currency=inr&page=1";
         const response = await fetch(`${process.env.COINGECKO_URI}${suffix}`);
         const rawData = await response.json();
-        // const rawData = response.data;
-        console.log(`rawdata = ${rawData}`)
 
-        // top 5 coins
+        // Log the raw data to understand its structure
+        // console.log('API Response:', rawData);
+
+        // Ensure rawData is an array
+        if (!Array.isArray(rawData)) {
+            throw new Error('API response is not an array');
+        }
         const topCoins = rawData.slice(0, 5).map(coin => ({
             id: coin.id,
             symbol: coin.symbol,
@@ -38,10 +42,29 @@ async function fetchAndStoreData() {
             last_updated: new Date(coin.last_updated)
         }));
 
+
         const document = new DataModel({
             fetched_at: new Date(),
             coins: topCoins
         });
+
+        // Save the new document
+        await document.save();
+
+        // Ensure only the latest 20 documents are kept
+        const count = await DataModel.countDocuments();
+        if (count > 20) {
+            // Find documents to delete
+            const documentsToDelete = await DataModel.find()
+                .sort({ fetched_at: 1 }) // Sort by fetched_at in ascending order
+                .limit(count - 20); // Get the documents to delete
+
+            const idsToDelete = documentsToDelete.map(doc => doc._id);
+
+            // Delete the old documents
+            await DataModel.deleteMany({ _id: { $in: idsToDelete } });
+            // console.log(`Deleted ${idsToDelete.length} old documents.`);
+        }
 
         await document.save();
 
